@@ -43,7 +43,7 @@ async function run() {
         app.post("/jwt", async (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-                expiresIn: "1h",
+                expiresIn: "10h",
             });
 
             res.send({ token });
@@ -51,7 +51,7 @@ async function run() {
 
         // middlewares
         const verifyToken = (req, res, next) => {
-            console.log("inside verify token", req.headers.authorization);
+            // console.log("inside verify token", req.headers.authorization);
             if (!req.headers.authorization) {
                 return res.status(401).send({ message: "unauthorized access" });
             }
@@ -120,7 +120,7 @@ async function run() {
             const result = await userCollection.insertOne(user);
             res.send(result);
         });
-
+        //    admin role ---------------------------
         app.patch(
             "/users/admin/:id",
             verifyToken,
@@ -148,8 +148,51 @@ async function run() {
             res.send(result);
         });
         // menu releted api
+
         app.get("/menu", async (req, res) => {
             const result = await menuCollection.find().toArray();
+            res.send(result);
+        });
+
+        // get spesepic id ----------------
+
+        app.get("/menu/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await menuCollection.findOne(query);
+            res.send(result);
+        });
+
+        app.post("/menu", verifyToken, verifyAdmin, async (req, res) => {
+            const item = req.body;
+            const result = await menuCollection.insertOne(item);
+            res.send(result);
+        });
+
+        // update item---------
+
+        app.patch("/menu/:id", async (req, res) => {
+            const item = req.body;
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    name: item.name,
+                    category: item.category,
+                    price: item.price,
+                    recipe: item.recipe,
+                    image: item.image,
+                },
+            };
+
+            const result = await menuCollection.updateOne(filter, updatedDoc);
+            res.send(result);
+        });
+        // delete menu items----------------------
+        app.delete("/menu/:id", verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await menuCollection.deleteOne(query);
             res.send(result);
         });
 
